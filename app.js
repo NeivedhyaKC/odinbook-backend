@@ -3,6 +3,13 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var cors = require("cors");
+const session = require("express-session");
+const passport = require("passport");
+const LocalStrategy = require("passport-local").Strategy;
+const bcrypt = require("bcryptjs");
+
+const User = require("./models/user");
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -12,7 +19,7 @@ var app = express();
 
 // Set up mongoose connection
 const mongoose = require("mongoose");
-const mongoDB ="mongodb+srv://m001-student:m001-mongodb-basics@sandbox.re7zlac.mongodb.net/?retryWrites=true&w=majority";
+const mongoDB ="mongodb+srv://m001-student:m001-mongodb-basics@sandbox.re7zlac.mongodb.net/odinbook-db?retryWrites=true&w=majority";
 mongoose.set('strictQuery', false);
 mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true });
 const db = mongoose.connection;
@@ -23,11 +30,47 @@ db.on("error", console.error.bind(console, "MongoDB connection error:"));
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
+passport.use(
+  new LocalStrategy({usernameField: "email"},(email, password, done) => {
+    User.findOne({ email: email }, (err, user) => {
+      if (err) { 
+        return done(err);
+      }
+      if (!user) {
+        return done(null, false, { message: "Incorrect email" });
+      }
+      bcrypt.compare(password, user.password, (err, res) => {
+        if (res) {
+          // passwords match! log user in
+          return done(null, user)
+        } else {
+          // passwords do not match!
+          return done(null, false, { message: "Incorrect password" })
+        }
+      })
+    });
+  })
+);
+passport.serializeUser(function(user, done) {
+  done(null, user.id);
+});
+
+passport.deserializeUser(function(id, done) {
+  User.findById(id, function(err, user) {
+    done(err, user);
+  });
+});
+
+app.use(session({ secret: "cats", resave: false, saveUninitialized: true }));
+app.use(passport.initialize());
+app.use(passport.session());
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(cors());
+
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
