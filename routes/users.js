@@ -3,13 +3,24 @@ var router = express.Router();
 
 const userController = require("../controllers/userController");
 
+const verifyToken = (req,res,next) =>
+{
+    const token = req.headers['authorization'];
+    if (token !== undefined)
+    {
+        req.token = token;
+        next();
+    }
+    else
+    {
+        res.sendStatus(403);    
+    }
+}
+
 /* GET users listing. */
-router.get('/', userController.users_get);
+router.get('/', [verifyToken,userController.users_get]);
 
 // Create new user
 router.post("/", userController.users_post);
-
-//User login
-router.post("/login", userController.users_login_post);
 
 module.exports = router;

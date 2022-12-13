@@ -1,7 +1,6 @@
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const { body, validationResult } = require("express-validator");
-const passport = require("passport");
 
 exports.users_get = (req, res) =>
 {
@@ -55,32 +54,4 @@ exports.users_post = [
         })
     }
 ]
-
-exports.users_login_post = [
-    body("email", "email required").trim().isLength({ min: 1 }).escape(),
-    body("password", "password required").trim().isLength({ min: 1 }).escape(),
-    (req, res, next) =>
-    {
-        passport.authenticate("local", (err, user, info) => {
-            if (err) {
-                return next(err);
-            }
-            if (!user)
-                return res.json({ msg: info });
-            if (user)
-            {
-                const finalUser = {
-                    first_name: user.first_name,
-                    last_name: user.last_name,
-                    _id: user._id,
-                    email: user.email,
-                    gender: user.gender,
-                    __v:user.__v
-                }
-                return res.json({ msg: "Login successful", finalUser });
-            }
-        })(req, res, next);
-    }
-    
-];
 

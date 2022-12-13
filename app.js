@@ -8,6 +8,7 @@ const session = require("express-session");
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 const bcrypt = require("bcryptjs");
+require('dotenv').config()
 
 const User = require("./models/user");
 
@@ -19,7 +20,8 @@ var app = express();
 
 // Set up mongoose connection
 const mongoose = require("mongoose");
-const mongoDB ="mongodb+srv://m001-student:m001-mongodb-basics@sandbox.re7zlac.mongodb.net/odinbook-db?retryWrites=true&w=majority";
+// eslint-disable-next-line no-undef
+const mongoDB =process.env.MONGO_URL;
 mongoose.set('strictQuery', false);
 mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true });
 const db = mongoose.connection;
@@ -37,7 +39,7 @@ passport.use(
         return done(err);
       }
       if (!user) {
-        return done(null, false, { message: "Incorrect email" });
+        return done(null, false, { msg: "Incorrect email" ,err:-1});
       }
       bcrypt.compare(password, user.password, (err, res) => {
         if (res) {
@@ -45,7 +47,7 @@ passport.use(
           return done(null, user)
         } else {
           // passwords do not match!
-          return done(null, false, { message: "Incorrect password" })
+          return done(null, false, { msg: "Incorrect password",err: -2 })
         }
       })
     });
@@ -70,6 +72,8 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cors());
+app.options('*', cors()) // include before other routes
+
 
 
 app.use('/', indexRouter);
