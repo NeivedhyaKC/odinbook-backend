@@ -2,10 +2,12 @@ const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const { body, validationResult } = require("express-validator");
 
-exports.users_get = (req, res) =>
+exports.users_get = (req, res,next) =>
 {
     User.find({}, {password:0}).exec((err, users) =>
     {
+        if (err)
+            next(err);
         res.json(users);
     });    
 }
@@ -24,7 +26,7 @@ exports.users_post = [
         {
             return res.status(400).json({msg:"Invalid data", errors : errors.array()});    
         }
-        if (User.find({ email: req.body.email }).count().exec())
+        if (User.find({ email: req.body.email }).count().exec() > 0)
         {
             return res.status(400).json({ msg: "User with this email is already registered" });    
         }
@@ -55,3 +57,25 @@ exports.users_post = [
     }
 ]
 
+exports.user_detail = (req,res,next) =>
+{
+    User.findById(req.params.userId, { password: 0 }).exec((err, user) =>
+    {
+        if (err)
+        {
+            next(err);    
+        }
+        return res.json(user);
+    })    
+}
+
+exports.authUser_get = (req, res) =>
+{
+    const finalUser = {
+        first_name: req.user.first_name,
+        last_name: req.user.last_name,
+        email: req.email,
+        gender: req.gender
+    };
+    return res.json({ user: finalUser });
+}

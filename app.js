@@ -4,9 +4,11 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var cors = require("cors");
-const session = require("express-session");
+// const session = require("express-session");
+const cookieSession = require("cookie-session");
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
+var GoogleStrategy = require( 'passport-google-oauth2' ).Strategy;
 const bcrypt = require("bcryptjs");
 require('dotenv').config()
 
@@ -17,6 +19,8 @@ var usersRouter = require('./routes/users');
 
 var app = express();
 
+// eslint-disable-next-line no-undef
+// const inProd = process.env.NODE_ENV === "production";
 
 // Set up mongoose connection
 const mongoose = require("mongoose");
@@ -29,6 +33,7 @@ db.on("error", console.error.bind(console, "MongoDB connection error:"));
 
 
 // view engine setup
+// eslint-disable-next-line no-undef
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
@@ -63,15 +68,67 @@ passport.deserializeUser(function(id, done) {
   });
 });
 
-app.use(session({ secret: "cats", resave: false, saveUninitialized: true }));
+passport.use(new GoogleStrategy({
+  // eslint-disable-next-line no-undef
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  // eslint-disable-next-line no-undef
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: "/auth/google/redirect"
+}, async (accessToken,refreshToken,profile,done) =>
+{
+  const count = await User.find({ email: profile.email }).count().exec();
+  if (count > 0)
+  {
+    User.findOne({ email: profile.email }, (err, user) => {
+      if (err)
+        return done(err);
+      else
+        return done(null, user);
+    });
+  }
+  else
+  {
+    var hashedPassword = await bcrypt.hash(profile.email, 10);  
+    const user = new User({
+      first_name: profile.given_name,
+      last_name: profile.family_name,
+      email: profile.email,
+      password: hashedPassword,
+      gender: "Male"
+    });
+
+    user.save((err) => 
+    {
+      if (err)
+      {
+        done(err);
+      }     
+      return done(null, user);
+    })
+  }
+}))
+
+// app.use(session({
+//   secret: "cats", resave: false, saveUninitialized: true, cookie:
+//   {
+//     maxAge: 24 * 60 * 60 * 1000,
+//     sameSite: `${inProd ? "none" : "lax"}`, // cross site // set lax while working with http:localhost, but none when in prod
+//     secure: `${inProd ? "true" : "auto"}`
+//   }
+// }));
+app.use(cookieSession({
+  maxAge: 24 * 60 * 60 * 1000,
+  keys: ['cats']
+}))
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+// eslint-disable-next-line no-undef
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(cors());
+app.use(cors({credentials:true, origin:"http://localhost:3000"}));
 app.options('*', cors()) // include before other routes
 
 
@@ -85,6 +142,7 @@ app.use(function(req, res, next) {
 });
 
 // error handler
+// eslint-disable-next-line no-unused-vars
 app.use(function(err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
