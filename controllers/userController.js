@@ -1,6 +1,7 @@
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const { body, validationResult } = require("express-validator");
+const passport = require("passport");
 
 exports.users_get = (req, res,next) =>
 {
@@ -28,7 +29,7 @@ exports.users_post = [
         }
         if (User.find({ email: req.body.email }).count().exec() > 0)
         {
-            return res.status(400).json({ msg: "User with this email is already registered" });    
+            return res.json({ msg: "User with this email is already registered" });    
         }
 
         var hashedPassword = await bcrypt.hash(req.body.password, 10);
@@ -47,15 +48,27 @@ exports.users_post = [
             {
                 next(err);
             }
-            return res.json({
-                user:
-                {
-                    first_name: user.first_name,
-                    last_name: user.last_name,
-                    email: user.email,
-                    gender: user.gender,
+            passport.authenticate("local",(err, user, info) => {
+                if (err) {
+                    return next(err);
                 }
-            });
+                if (!user)
+                    return res.json({ info});
+                if (user)
+                {
+                  req.login(user, (err) =>
+                  {
+                    if (err) { next(); }
+                    const finalUser = {
+                      first_name: user.first_name,
+                      last_name: user.last_name,
+                      email: user.email,
+                      gender:user.gender
+                    }
+                    return res.json({ msg: "Login successful", user:finalUser });
+                  })
+                }
+            })(req, res, next);
         })
     }
 ]

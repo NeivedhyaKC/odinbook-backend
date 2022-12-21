@@ -29,13 +29,13 @@ router.post('/login',[
             req.login(user, (err) =>
             {
               if (err) { next(); }
-              
-              // eslint-disable-next-line no-undef
-              // jwt.sign({ user }, process.env.JWT_SECRET_KEY, (err, token) =>
-              // {
-              //   return res.json({ msg: "Login successful",user ,token});
-              // })
-              return res.json({ msg: "Login successful", user });
+              const finalUser = {
+                first_name: user.first_name,
+                last_name: user.last_name,
+                email: user.email,
+                gender:user.gender
+              }
+              return res.json({ msg: "Login successful", user:finalUser });
             })
           }
       })(req, res, next);
