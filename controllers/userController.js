@@ -13,10 +13,10 @@ exports.users_get = (req, res,next) =>
 }
 
 exports.users_post = [
-    body("first_name", "first_name required").trim().isLength({ min: 1 }).escape(),
-    body("last_name", "last_name required").trim().isLength({ min: 1 }).escape(),
+    body("first_name", "first_name required").isAlpha().trim().isLength({ min: 1 }).escape(),
+    body("last_name", "last_name required").isAlpha().trim().isLength({ min: 1 }).escape(),
     body("email", "email required").trim().isLength({ min: 1 }).escape(),
-    body("password", "password required").trim().isLength({ min: 1 }).escape(),
+    body("password", "more than 8 character for pasword required").trim().isLength({ min: 8 }).escape(),
     body("gender", "gender required").trim().isLength({ min: 1 }).escape(),
 
     async (req, res,next) =>
@@ -48,10 +48,13 @@ exports.users_post = [
                 next(err);
             }
             return res.json({
-                first_name: user.first_name,
-                last_name: user.last_name,
-                email: user.email,
-                gender: user.gender,
+                user:
+                {
+                    first_name: user.first_name,
+                    last_name: user.last_name,
+                    email: user.email,
+                    gender: user.gender,
+                }
             });
         })
     }

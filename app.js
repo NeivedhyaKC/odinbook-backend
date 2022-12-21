@@ -31,7 +31,14 @@ mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true });
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "MongoDB connection error:"));
 
-
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+  res.header("Access-Control-Allow-Credentials", true);
+  // res.header("Access-Control-Allow-Headers", "*")
+  // res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Headers, Access-Control-Request-Method, Access-Control-Request-Headers, Authorization");
+  // res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, PATCH, OPTIONS');
+  next();
+});
 // view engine setup
 // eslint-disable-next-line no-undef
 app.set('views', path.join(__dirname, 'views'));
@@ -129,7 +136,7 @@ app.use(cookieParser());
 // eslint-disable-next-line no-undef
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cors({credentials:true, origin:"http://localhost:3000"}));
-app.options('*', cors()) // include before other routes
+// app.options('*', cors()) // include before other routes
 
 
 
