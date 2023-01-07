@@ -1,6 +1,8 @@
 var express = require('express');
 var router = express.Router();
-require('dotenv').config()
+var postRouter = require("./posts");
+require('dotenv').config();
+// const gfsAndDbInit = require("../middlewares/gfsInit");
 
 const userController = require("../controllers/userController");
 const { isUserAuthenticated } = require('../middlewares/auth');
@@ -40,6 +42,8 @@ router.post("/", userController.users_post);
 router.get("/authUser", [isUserAuthenticated, userController.authUser_get]);
 //Get user detail
 router.get('/:userId', [isUserAuthenticated, userController.user_detail]);
+
+router.use("/:userId/posts", [isUserAuthenticated,postRouter]);
 
 
 module.exports = router;

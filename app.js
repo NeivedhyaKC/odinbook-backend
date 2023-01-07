@@ -10,10 +10,14 @@ const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 var GoogleStrategy = require( 'passport-google-oauth2' ).Strategy;
 const bcrypt = require("bcryptjs");
+// const methodOverride = require('method-override');
 require('dotenv').config()
+
+const gfsAndDbInit = require("./middlewares/gfsInit");
 
 const User = require("./models/user");
 
+gfsAndDbInit();
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
@@ -22,14 +26,6 @@ var app = express();
 // eslint-disable-next-line no-undef
 // const inProd = process.env.NODE_ENV === "production";
 
-// Set up mongoose connection
-const mongoose = require("mongoose");
-// eslint-disable-next-line no-undef
-const mongoDB =process.env.MONGO_URL;
-mongoose.set('strictQuery', false);
-mongoose.connect(mongoDB, { useNewUrlParser: true, useUnifiedTopology: true });
-const db = mongoose.connection;
-db.on("error", console.error.bind(console, "MongoDB connection error:"));
 
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "http://localhost:3000");
@@ -47,7 +43,7 @@ app.set('view engine', 'pug');
 passport.use(
   new LocalStrategy({usernameField: "email"},(email, password, done) => {
     User.findOne({ email: email }, (err, user) => {
-      if (err) { 
+      if (err) {
         return done(err);
       }
       if (!user) {
@@ -55,8 +51,16 @@ passport.use(
       }
       bcrypt.compare(password, user.password, (err, res) => {
         if (res) {
-          // passwords match! log user in
-          return done(null, user)
+
+          User.findOne({ email: email }, { password: 0 }).exec((err, user) =>
+          {
+            if (err)
+            {
+              return done(err);
+            }
+            // passwords match! log user in
+            return done(null, user)
+          })
         } else {
           // passwords do not match!
           return done(null, false, { msg: "Incorrect password",err: -2 })
@@ -70,7 +74,8 @@ passport.serializeUser(function(user, done) {
 });
 
 passport.deserializeUser(function(id, done) {
-  User.findById(id, function(err, user) {
+  User.findById( id,function (err, user) {
+    // eslint-disable-next-line no-unused-vars
     done(err, user);
   });
 });
@@ -86,7 +91,7 @@ passport.use(new GoogleStrategy({
   const count = await User.find({ email: profile.email }).count().exec();
   if (count > 0)
   {
-    User.findOne({ email: profile.email }, (err, user) => {
+    User.findOne({ email: profile.email }, {password:0}).exec((err, user) => {
       if (err)
         return done(err);
       else
@@ -95,21 +100,20 @@ passport.use(new GoogleStrategy({
   }
   else
   {
-    var hashedPassword = await bcrypt.hash(profile.email, 10);  
+    var hashedPassword = await bcrypt.hash(profile.email, 10);
     const user = new User({
-      first_name: profile.given_name,
-      last_name: profile.family_name,
+      firstName: profile.given_name,
+      lastName: profile.family_name,
       email: profile.email,
-      password: hashedPassword,
-      gender: "Male"
+      password: hashedPassword
     });
 
-    user.save((err) => 
+    user.save((err) =>
     {
       if (err)
       {
         done(err);
-      }     
+      }
       return done(null, user);
     })
   }

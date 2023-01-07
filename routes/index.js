@@ -29,13 +29,7 @@ router.post('/login',[
             req.login(user, (err) =>
             {
               if (err) { next(); }
-              const finalUser = {
-                first_name: user.first_name,
-                last_name: user.last_name,
-                email: user.email,
-                gender:user.gender
-              }
-              return res.json({ msg: "Login successful", user:finalUser });
+              return res.json({ msg: "Login successful", user });
             })
           }
       })(req, res, next);

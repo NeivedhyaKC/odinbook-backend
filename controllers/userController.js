@@ -14,11 +14,10 @@ exports.users_get = (req, res,next) =>
 }
 
 exports.users_post = [
-    body("first_name", "first_name required").isAlpha().trim().isLength({ min: 1 }).escape(),
-    body("last_name", "last_name required").isAlpha().trim().isLength({ min: 1 }).escape(),
+    body("firstName", "first_name required").isAlpha().trim().isLength({ min: 1 }).escape(),
+    body("lastName", "last_name required").isAlpha().trim().isLength({ min: 1 }).escape(),
     body("email", "email required").trim().isLength({ min: 1 }).escape(),
     body("password", "more than 8 character for pasword required").trim().isLength({ min: 8 }).escape(),
-    body("gender", "gender required").trim().isLength({ min: 1 }).escape(),
 
     async (req, res,next) =>
     {
@@ -27,19 +26,19 @@ exports.users_post = [
         {
             return res.status(400).json({msg:"Invalid data", errors : errors.array()});    
         }
-        if (User.find({ email: req.body.email }).count().exec() > 0)
+        let count = await User.find({ email: req.body.email }).count();
+        if (count > 0)
         {
-            return res.json({ msg: "User with this email is already registered" });    
+            return res.json({ info: { msg: "User with this email is already registered", err:-1 } });    
         }
 
         var hashedPassword = await bcrypt.hash(req.body.password, 10);
         
         const user = new User({
-            first_name: req.body.first_name,
-            last_name: req.body.last_name,
+            firstName: req.body.firstName,
+            lastName: req.body.lastName,
             email: req.body.email,
-            password: hashedPassword,
-            gender : req.body.gender,
+            password: hashedPassword
         })      
         
         user.save((err) => 
@@ -59,13 +58,7 @@ exports.users_post = [
                   req.login(user, (err) =>
                   {
                     if (err) { next(); }
-                    const finalUser = {
-                      first_name: user.first_name,
-                      last_name: user.last_name,
-                      email: user.email,
-                      gender:user.gender
-                    }
-                    return res.json({ msg: "Login successful", user:finalUser });
+                    return res.json({ msg: "Login successful", user });
                   })
                 }
             })(req, res, next);
@@ -87,11 +80,5 @@ exports.user_detail = (req,res,next) =>
 
 exports.authUser_get = (req, res) =>
 {
-    const finalUser = {
-        first_name: req.user.first_name,
-        last_name: req.user.last_name,
-        email: req.email,
-        gender: req.gender
-    };
-    return res.json({ user: finalUser });
+    return res.json({ user: req.user });
 }
