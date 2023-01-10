@@ -3,10 +3,11 @@ const gfsAndDbInit = require("../middlewares/gfsInit");
 const { body, validationResult } = require("express-validator");
 const User = require("../models/user");
 const Post = require("../models/post");
+const { ObjectId } = require("mongodb");
 
 exports.posts_get = (req, res, next) =>
 {
-  Post.find({}).populate("userId").exec((err, posts) =>
+  Post.find({}).populate("userId").populate("comments.userId").exec((err, posts) =>
   {
       if (err)
           next(err);
@@ -34,17 +35,13 @@ exports.post_post = [
     {
       return res.status(400).json({ msg: "User with this id does not exist"});    
     }
-    if (req.body.likes === undefined)
-    {
-      return res.status(400).json({ msg: "no of like for post to be created is 0" });  
-    }
 
     const post = new Post({
       userId: req.body.userId,
       content: req.body.content,
       photoUrl: req.fileInfo ? req.fileInfo.filename : undefined,
       postedAt: req.body.postedAt,
-      likes: req.body.likes,
+      likes: [],
       comments: []
     });
 
@@ -57,6 +54,74 @@ exports.post_post = [
       return res.json({ msg: "post created successfully",post:post });
     })
 }];
+
+exports.post_comment_put = [
+  body("comment").isLength({ min: 1 }).escape(),
+  async (req, res, next) => {
+
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty)
+    {
+      return res.status(400).json({msg:"Invalid data", errors : errors.array()});    
+    }
+
+    let count = await User.find({ _id:req.body.userId }).count();
+    if (count === 0)
+    {
+      return res.status(400).json({ msg: "User with this id does not exist"});    
+    }
+
+    Post.findOne({ _id: req.params.postId }, (err, post) => {
+      if (err) {
+        next(err);
+      }
+      post.comments.push({comment : req.body.comment ,userId : req.body.userId});
+
+      // eslint-disable-next-line no-unused-vars
+      Post.findByIdAndUpdate(post._id, post, {}, (err, thepost) => {
+        if (err) {
+          return next(err);
+        }
+
+        return res.json({ msg: "post successfully updated", post: post });
+      });
+    })
+  }
+]
+
+exports.post_like_put = async (req, res, next) =>
+{
+  let count = await User.find({ _id:req.body.userId }).count();
+  if (count === 0)
+  {
+    return res.status(400).json({ msg: "User with this id does not exist"});    
+  }
+
+  Post.findOne({ _id: req.params.postId }, (err, post) => {
+    if (err) {
+      next(err);
+    }
+
+    if (req.body.operation === 'add')
+    {
+      post.likes.push(req.body.userId);
+    }
+    else if (req.body.operation === 'remove')
+    {
+      post.likes = post.likes.filter((el) => {return el.toString() !== req.body.userId; });
+    }
+
+    // eslint-disable-next-line no-unused-vars
+    Post.findByIdAndUpdate(post._id, post, {}, (err, thepost) => {
+      if (err) {
+        return next(err);
+      }
+
+      return res.json({ msg: "post successfully updated", post: post });
+    });
+  })
+}
 
 exports.post_image_get = async (req, res, next) =>
 {
@@ -99,17 +164,40 @@ exports.post_image_get = async (req, res, next) =>
   
 }
 
-exports.post_delete = (req,res) =>
+exports.post_delete = async (req, res, next) =>
 {
-  // yet to be tested
-  //Deletes only post image
-  let { gfs} = gfsAndDbInit();
-  // eslint-disable-next-line no-unused-vars
-  gfs.remove({ _id: req.params.postId, root: "uploads" }, (err, gridStore) =>
+
+  const post = await Post.findOne({ _id: req.params.postId});
+  if (post.userId.toString() !== req.params.userId)
+  {
+    return res.status(400).json({ msg: "Only OP can delete post" });  
+  }
+
+  let { gfs, gridFsBucket } = gfsAndDbInit();
+
+  gfs.files.findOne({ filename: post.photoUrl }, (err, file) =>
   {
     if (err)
-      return res.status(404).json({ err: err });
-    
+    {
+      next(err);  
+    }
+
+    gridFsBucket.delete(ObjectId(file._id));
+    //   // eslint-disable-next-line no-unused-vars
+    // gfs.remove({ filename:post.photoUrl, root: "uploads" ,_id:file._id }, (err, gridStore) =>
+    // {
+    //   if (err)
+    //     next(err);
+    // })
+  })
+  
+
+  Post.findByIdAndDelete(post._id, (err) =>
+  {
+    if (err)
+    {
+      return next(err);  
+    }
     return res.json({ msg: "post delete successful" });
   })
 }
