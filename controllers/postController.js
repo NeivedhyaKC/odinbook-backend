@@ -4,6 +4,7 @@ const { body, validationResult } = require("express-validator");
 const User = require("../models/user");
 const Post = require("../models/post");
 const { ObjectId } = require("mongodb");
+const { post } = require("../routes");
 
 exports.posts_get = (req, res, next) =>
 {
@@ -15,11 +16,36 @@ exports.posts_get = (req, res, next) =>
   });  
 }
 
+exports.userPosts_get = async (req, res, next) =>
+{
+  let posts = await Post.find({ userId: req.params.userId }).populate("userId").populate("comments.userId").exec();
+  posts.sort((a, b) => { return b.postedAt - a.postedAt });
+  return res.json({ posts: posts });
+}
+
+exports.friendsPosts_get = async (req,res,next) =>
+{
+  let user = await User.findOne({ _id: req.params.userId }).exec();
+  let posts = [];
+
+  let userPosts = await Post.find({ userId: req.params.userId }).populate("userId").populate("comments.userId").exec();
+  posts.push(...userPosts);
+
+  for (friendId of user.friends)
+  {
+    let tempPosts = await Post.find({ userId: friendId }).populate("userId").populate("comments.userId").exec();
+    posts.push(...tempPosts);
+  }
+
+  posts.sort((a, b) => { return b.postedAt - a.postedAt });
+  return res.json(posts);
+}
+
 exports.post_post = [
   
   getUpload().single("postImage"),
 
-  body("content", "content required").isLength({ min: 1 }).escape(),
+  body("content", "content required").isLength({ min: 1 }),
   body("postedAt","Date posted is required").isISO8601().toDate(),
   
   async (req, res, next) =>
@@ -56,7 +82,7 @@ exports.post_post = [
 }];
 
 exports.post_comment_put = [
-  body("comment").isLength({ min: 1 }).escape(),
+  body("comment").isLength({ min: 1 }),
   async (req, res, next) => {
 
     const errors = validationResult(req);
@@ -72,21 +98,20 @@ exports.post_comment_put = [
       return res.status(400).json({ msg: "User with this id does not exist"});    
     }
 
-    Post.findOne({ _id: req.params.postId }, (err, post) => {
+    Post.findOne({ _id: req.params.postId }, async (err, post) => {
       if (err) {
         next(err);
       }
       post.comments.push({comment : req.body.comment ,userId : req.body.userId});
 
       // eslint-disable-next-line no-unused-vars
-      Post.findByIdAndUpdate(post._id, post, {}, (err, thepost) => {
-        if (err) {
-          return next(err);
-        }
+      let thePost = await Post.findByIdAndUpdate(post._id, post, {});
+      if (err) {
+        return next(err);
+      }
 
-        return res.json({ msg: "post successfully updated", post: post });
-      });
-    })
+      return res.json({ msg: "post successfully updated", post: thePost });
+    });
   }
 ]
 
@@ -173,24 +198,26 @@ exports.post_delete = async (req, res, next) =>
     return res.status(400).json({ msg: "Only OP can delete post" });  
   }
 
-  let { gfs, gridFsBucket } = gfsAndDbInit();
-
-  gfs.files.findOne({ filename: post.photoUrl }, (err, file) =>
+  if (post.photoUrl !== undefined)
   {
-    if (err)
-    {
-      next(err);  
-    }
+    let { gfs, gridFsBucket } = gfsAndDbInit();
 
-    gridFsBucket.delete(ObjectId(file._id));
-    //   // eslint-disable-next-line no-unused-vars
-    // gfs.remove({ filename:post.photoUrl, root: "uploads" ,_id:file._id }, (err, gridStore) =>
-    // {
-    //   if (err)
-    //     next(err);
-    // })
-  })
-  
+    gfs.files.findOne({ filename: post.photoUrl }, (err, file) =>
+    {
+      if (err)
+      {
+        next(err);  
+      }
+
+      gridFsBucket.delete(ObjectId(file._id));
+      //   // eslint-disable-next-line no-unused-vars
+      // gfs.remove({ filename:post.photoUrl, root: "uploads" ,_id:file._id }, (err, gridStore) =>
+      // {
+      //   if (err)
+      //     next(err);
+      // })
+    })
+  }
 
   Post.findByIdAndDelete(post._id, (err) =>
   {

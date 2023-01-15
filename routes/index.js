@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 const { body, validationResult } = require("express-validator");
 const passport = require("passport");
+const User = require("../models/user");
 
 /* GET home page. */
 router.get('/', function(req, res) {
@@ -26,10 +27,11 @@ router.post('/login',[
               return res.json({ info});
           if (user)
           {
-            req.login(user, (err) =>
+            req.login(user, async (err) =>
             {
               if (err) { next(); }
-              return res.json({ msg: "Login successful", user });
+              let populatedUser = await User.findOne({ _id: user._id }).populate("friends").populate("friendRequests").populate("savedPosts").exec();
+              return res.json({ msg: "Login successful", user:populatedUser });
             })
           }
       })(req, res, next);

@@ -7,32 +7,6 @@ require('dotenv').config();
 const userController = require("../controllers/userController");
 const { isUserAuthenticated } = require('../middlewares/auth');
 
-// const verifyToken = (req,res,next) =>
-// {
-//     const token = req.headers['authorization'];
-//     if (token !== undefined)
-//     {
-//         // eslint-disable-next-line no-undef
-//         jwt.verify(token, process.env.JWT_SECRET_KEY, (err, authData) =>
-//         {
-//             if (err)
-//             {
-//                 return res.sendStatus(403);    
-//             }
-//             else
-//             {
-//                 console.log(authData);
-//                 req.authData = authData;
-//                 next();
-//             }
-//         })
-//     }
-//     else
-//     {
-//         return res.sendStatus(403);    
-//     }
-// }
-
 /* GET users listing. */
 router.get('/', [isUserAuthenticated,userController.users_get]);
 
@@ -43,7 +17,19 @@ router.get("/authUser", [isUserAuthenticated, userController.authUser_get]);
 //Get user detail
 router.get('/:userId', [isUserAuthenticated, userController.user_detail]);
 
-router.use("/:userId/posts", [isUserAuthenticated,postRouter]);
+router.use("/:userId/posts", [isUserAuthenticated, postRouter]);
+
+router.put("/:userId", [isUserAuthenticated, userController.user_put]);
+
+router.get("/:userId/image", [isUserAuthenticated, userController.user_image_get]);
+
+router.get("/:userId/image/:filename", [isUserAuthenticated, userController.user_image_get]);
+
+router.put("/:userId/:friendReqId/friendRequest", [isUserAuthenticated, userController.user_friendRequest_put]);
+
+router.put("/:userId/:friendReqId/removeFriendRequest", [isUserAuthenticated, userController.user_removeFriendRequest_put]);
+
+router.put("/:userId/:friendId/addFriend", [isUserAuthenticated, userController.user_addFriend_put]);
 
 
 module.exports = router;

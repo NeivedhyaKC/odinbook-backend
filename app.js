@@ -108,13 +108,14 @@ passport.use(new GoogleStrategy({
       password: hashedPassword
     });
 
-    user.save((err) =>
+    user.save(async (err) =>
     {
       if (err)
       {
         done(err);
       }
-      return done(null, user);
+      let populatedUser = await User.findOne({ _id: user._id }).populate("friends").populate("friendRequests").populate("savedPosts").exec();
+      return done(null, populatedUser);
     })
   }
 }))
