@@ -4,6 +4,7 @@ const { body, validationResult } = require("express-validator");
 const passport = require("passport");
 const gfsAndDbInit = require("../middlewares/gfsInit");
 const getUpload = require("../middlewares/gridFsStorage");
+const Post = require("../models/post");
 
 exports.logout = (req,res) =>
 {
@@ -279,4 +280,33 @@ exports.user_addFriend_put = async (req, res, next) =>
 
     let finalUser = await User.findOne({ _id: user._id }).populate("friends").populate("friendRequests").populate("savedPosts").exec();
     return res.json({ msg: "Add Friends completed successfully" ,user:finalUser});
+}
+
+exports.user_savePost_put = async (req,res,next) =>
+{
+    let user = await User.findOne({ _id: req.params.userId }).exec();
+    if (req.body.operation === "add")
+    {
+        user.savedPosts.push(req.params.postId);
+    }
+    else if ( req.body.operation === "remove")
+    {
+        user.savedPosts = user.savedPosts.filter((el) => { return el.toString() !== req.params.postId; });
+    }
+
+    await User.findByIdAndUpdate(user._id, user, {}).exec();
+
+    let finalUser = await User.findOne({ _id: user._id }).populate("friends").populate("friendRequests").populate("savedPosts").exec();
+    return res.json({ msg: "save/unsave completed successfully" ,user:finalUser});
+}
+exports.user_savedPosts_get = async (req, res, next) =>
+{
+    let user = await User.findOne({ _id: req.params.userId }).exec();
+    let posts = [];
+    for (let postId of user.savedPosts)
+    {
+        let tempPost = await Post.findOne({ _id: postId }).populate("userId").exec();
+        posts.push(tempPost);
+    }
+    return res.json({ posts: posts });
 }

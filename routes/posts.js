@@ -19,6 +19,4 @@ router.get("/:postId/image", postController.post_image_get);
 
 router.delete("/:postId", postController.post_delete);
 
-
-
 module.exports = router;

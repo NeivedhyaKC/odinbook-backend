@@ -32,5 +32,9 @@ router.put("/:userId/:friendReqId/removeFriendRequest", [isUserAuthenticated, us
 
 router.put("/:userId/:friendId/addFriend", [isUserAuthenticated, userController.user_addFriend_put]);
 
+router.put("/:userId/:postId/savePost", [isUserAuthenticated, userController.user_savePost_put]);
+
+router.get("/:userId/savedPosts", [isUserAuthenticated, userController.user_savedPosts_get]);
+
 
 module.exports = router;
