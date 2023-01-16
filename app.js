@@ -130,7 +130,9 @@ passport.use(new GoogleStrategy({
 // }));
 app.use(cookieSession({
   maxAge: 24 * 60 * 60 * 1000,
-  keys: ['cats']
+  keys: ['cats'],
+  sameSite: 'none',
+  secure:true
 }))
 app.use(passport.initialize());
 app.use(passport.session());
