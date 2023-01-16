@@ -132,7 +132,8 @@ app.use(cookieSession({
   maxAge: 24 * 60 * 60 * 1000,
   keys: ['cats'],
   sameSite: 'none',
-  secure:true
+  secure: true,
+  httpOnly:false
 }))
 app.use(passport.initialize());
 app.use(passport.session());
