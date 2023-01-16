@@ -97,6 +97,7 @@ exports.post_comment_put = [
     {
       return res.status(400).json({ msg: "User with this id does not exist"});    
     }
+    let user = await User.findOne({ _id:req.body.userId }).exec();
 
     Post.findOne({ _id: req.params.postId }, async (err, post) => {
       if (err) {
@@ -105,13 +106,13 @@ exports.post_comment_put = [
       post.comments.push({comment : req.body.comment ,userId : req.body.userId});
 
       // eslint-disable-next-line no-unused-vars
-      let thePost = await Post.findByIdAndUpdate(post._id, post, {});
+      let thePost = await Post.findByIdAndUpdate(post._id, post, {}).populate("userId").populate("comments.userId").exec();
       if (err) {
         return next(err);
       }
-
+      thePost.comments.push({ comment: req.body.comment, userId: user });
       return res.json({ msg: "post successfully updated", post: thePost });
-    });
+    }).populate("userId").populate("comments.userId");
   }
 ]
 

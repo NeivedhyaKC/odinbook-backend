@@ -5,6 +5,22 @@ const passport = require("passport");
 const gfsAndDbInit = require("../middlewares/gfsInit");
 const getUpload = require("../middlewares/gridFsStorage");
 
+exports.logout = (req,res) =>
+{
+    // req.logout(function (err)
+    // {
+    //     if (err)
+    //     {
+    //         next(err);    
+    //     }
+    //     req.user = null;
+    //     return res.json({ msg: "Logged out successfully" });
+    // })
+    req.logout();
+    req.user = null;
+    return res.json({ msg: "Logged out successfully" });
+}
+
 exports.users_get = (req, res,next) =>
 {
     User.find({}, {password:0}).populate("friends").populate("friendRequests").populate("savedPosts").exec((err, users) =>
@@ -255,10 +271,8 @@ exports.user_addFriend_put = async (req, res, next) =>
         friend.friendRequests = friend.friendRequests.filter((el) => { return el.toString() !== req.params.userId });
     }
 
-    console.log(user.friends);
     user.friends.push(req.params.friendId);
     friend.friends.push(req.params.userId);
-    console.log(user.friends);
 
     await User.findByIdAndUpdate(user._id, user, {}).exec();
     await User.findByIdAndUpdate(friend._id, friend, {}).exec();

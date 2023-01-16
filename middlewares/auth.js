@@ -6,6 +6,6 @@ module.exports.isUserAuthenticated = (req,res,next) =>
     }
     else
     {
-        res.status(401).json("You must login first");    
+        res.status(401).json({msg: "You must login first"});    
     }
 }

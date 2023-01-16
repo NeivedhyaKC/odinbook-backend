@@ -7,6 +7,7 @@ require('dotenv').config();
 const userController = require("../controllers/userController");
 const { isUserAuthenticated } = require('../middlewares/auth');
 
+router.post("/logout", [isUserAuthenticated, userController.logout]);
 /* GET users listing. */
 router.get('/', [isUserAuthenticated,userController.users_get]);
 
