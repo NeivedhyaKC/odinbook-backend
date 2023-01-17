@@ -163,6 +163,11 @@ exports.user_image_get = async (req,res,next) =>
             next(err);
         }
         let { gfs, gridFsBucket } = gfsAndDbInit();
+        if (!user.photoUrl)
+        {
+            const readstream = gridFsBucket.openDownloadStreamByName("d21e45b1c1b96b95b969c657e0bf77ac.jpg");
+            return readstream.pipe(res);
+        }
         gfs.files.findOne({ filename: user.photoUrl }, (err, file) => {
             
             if (err) {

@@ -30,10 +30,13 @@ var app = express();
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "http://localhost:3000");
   res.header("Access-Control-Allow-Credentials", true);
-  // res.header("Access-Control-Allow-Headers", "*")
-  // res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Headers, Access-Control-Request-Method, Access-Control-Request-Headers, Authorization");
-  // res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, PATCH, OPTIONS');
+  res.header("Access-Control-Allow-Headers", "*")
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Headers, Access-Control-Request-Method, Access-Control-Request-Headers, Authorization");
+  res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE, PATCH, OPTIONS');
   next();
+});
+app.options('/*', (_, res) => {
+  res.sendStatus(200);
 });
 // view engine setup
 // eslint-disable-next-line no-undef
@@ -131,10 +134,14 @@ passport.use(new GoogleStrategy({
 app.use(cookieSession({
   maxAge: 24 * 60 * 60 * 1000,
   keys: ['cats'],
-  sameSite: 'none',
-  secure: true,
-  httpOnly:false
-}))
+  sameSite: process.env.NODE_ENV === "development"? false: 'none',
+  secure: process.env.NODE_ENV === "development" ? false : true,
+  httpOnly:process.env.NODE_ENV ==="development" ?false:true
+}));
+// app.use((req, res, next) => {
+//   req["sessionCookies"].secure = true;
+//   next();
+// });
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(logger('dev'));
@@ -144,7 +151,7 @@ app.use(cookieParser());
 // eslint-disable-next-line no-undef
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cors({credentials:true, origin:"http://localhost:3000"}));
-// app.options('*', cors()) // include before other routes
+app.options('*', cors()) // include before other routes
 
 
 
@@ -162,6 +169,7 @@ app.use(function(err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
+
 
   // render the error page
   res.status(err.status || 500);
