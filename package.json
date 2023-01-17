@@ -29,10 +29,10 @@
     "passport": "^0.5.3",
     "passport-google-oauth2": "^0.2.0",
     "passport-local": "^1.0.0",
-    "pug": "2.0.0-beta11"
+    "pug": "2.0.0-beta11",
+    "dotenv": "^16.0.3"
   },
   "devDependencies": {
-    "dotenv": "^16.0.3",
     "eslint": "^8.29.0",
     "eslint-config-prettier": "^8.5.0",
     "nodemon": "^2.0.20",
