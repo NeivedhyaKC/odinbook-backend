@@ -138,6 +138,7 @@ app.use(cookieSession({
   secure: process.env.NODE_ENV === "development" ? false : true,
   httpOnly:process.env.NODE_ENV ==="development" ?false:true
 }));
+app.enable("trust proxy");
 // app.use((req, res, next) => {
 //   req["sessionCookies"].secure = true;
 //   next();
