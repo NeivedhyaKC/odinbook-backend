@@ -28,7 +28,7 @@ var app = express();
 
 
 app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+  res.header("Access-Control-Allow-Origin", process.env.NODE_ENV === "development"? "http://localhost:3000" : "https://neivedhyakc.github.io");
   res.header("Access-Control-Allow-Credentials", true);
   res.header("Access-Control-Allow-Headers", "*")
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Headers, Access-Control-Request-Method, Access-Control-Request-Headers, Authorization");
@@ -151,7 +151,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 // eslint-disable-next-line no-undef
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(cors({credentials:true, origin:"http://localhost:3000"}));
+app.use(cors({credentials:true, origin:["http://localhost:3000", "https://neivedhyakc.github.io"]}));
 app.options('*', cors()) // include before other routes
 
 
