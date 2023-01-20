@@ -220,6 +220,15 @@ exports.post_delete = async (req, res, next) =>
     })
   }
 
+  let users = await User.find({ savedPosts: { "$in": [req.params.postId] } }).exec();
+
+  for (let user of users)
+  {
+    user.savedPosts = user.savedPosts.filter((el) => { return el.toString() !== req.params.postId; })
+    
+    await User.findByIdAndUpdate(user._id, user, {}).exec();
+  }
+
   Post.findByIdAndDelete(post._id, (err) =>
   {
     if (err)
