@@ -45,7 +45,7 @@ router.get('/auth/google',passport.authenticate("google", {
 
 router.get('/auth/google/redirect', passport.authenticate('google',
   {
-    successRedirect: "http://localhost:3000/login/success",
-    failureRedirect: "http://localhost:3000/login"
+    successRedirect: `${process.env.FRONT_END_URL}/login/success`,
+    failureRedirect: `${process.env.FRONT_END_URL}/login`
   }))
 module.exports = router;
